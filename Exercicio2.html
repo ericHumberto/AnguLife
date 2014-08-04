@@ -1,4 +1,4 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="en">
 <head>
 	<meta charset="utf-8">
@@ -11,11 +11,16 @@
 	<script>
 		angular.module("myapp", []).controller('MyCtrl', ['$scope','$interval', function ($scope, $interval) {
 
-			$scope.numberOfLines = 10;
-			$scope.numberOfColumns = 10;
+			$scope.numberOfLines = 20;
+			$scope.numberOfColumns = 20;
+			$scope.numberOfLiving = 0;
 			$scope.gen = 0;            
+			$scope.lines = [];
+			$scope.newLines = [];
+			$scope.timeExec = 100;
+			$scope.promisseAutoExec = null;
 
-			$scope.populateArray = function () {
+			$scope.populateArray = function (){
 
 				if (isNaN(parseInt($scope.numberOfLines))) {
 					alert("Número de linhas de ser um inteiro");
@@ -24,30 +29,65 @@
 				else if (isNaN(parseInt($scope.numberOfColumns))) {
 					alert("Número de colunas de ser um inteiro");
 					return;
-				}
-
-				$scope.lines = [];
-				$scope.newLines = [];
+				};			
 
 				for (var i = 0; i < $scope.numberOfLines; i++) {
 
 					$scope.lines.push({ columns: [] });
 
 					for (var j = 0; j < $scope.numberOfColumns; j++) {
-						$scope.lines[i].columns.push({ happy: false});
+						$scope.lines[i].columns.push({ living: false});
 					}
 				};
 			};
 
 			$scope.step = function (){
-				$scope.gen++;
-				$scope.calculateNewState();
+				if($scope.lines.length <= 0){
+					alert('Crie uma tabela');
+					if($scope.promisseAutoExec != null){
+						$scope.resetAll();
+					}
+					return;
+				}
+
+				if($scope.numberOfLiving >= 1){
+					$scope.gen++;
+					$scope.calculateNewState();
+				}
+				else{
+					$scope.stopAuto();
+				}	
 			};
 
 			$scope.stepAuto = function (){
-				$interval(function(){
+				if (isNaN(parseInt($scope.timeExec))) {
+					alert("Tempo entre execuções deve ser um número");
+					return;
+				};
+
+				$scope.promisseAutoExec = $interval(function(){
 					$scope.step();
 				}, 10);
+			};
+
+			$scope.stopAuto = function (){
+				$interval.cancel($scope.promisseAutoExec);
+				$scope.promisseAutoExec = null;
+			};
+
+			$scope.changeLife = function (column, revive){
+				column.living = revive;
+				if(revive)
+					$scope.numberOfLiving++;
+				else
+					$scope.numberOfLiving--;
+			}
+
+			$scope.resetAll = function (){
+				$scope.stopAuto();
+				$scope.lines = [];
+				$scope.gen = 0;
+				$scope.populateArray();
 			};
 
 			$scope.calculateNewState = function(){
@@ -60,32 +100,34 @@
 						line = parseInt(line);
 						col = parseInt(col);
 
-						var happiness = $scope.lines[line].columns[col].happy;
+						var life = $scope.lines[line].columns[col].living;
 
 						var number_neighbors = $scope.getNumberOfNeighbors(line, col);
 
-						if(happiness)
+						if(life)
 						{
 							if(number_neighbors < 2 || number_neighbors > 3)
 							{
-								happiness = false;					
+								life = false;					
 							}
 							else if(number_neighbors >= 2 || number_neighbors <= 3)
 							{
-								happiness = happiness;				
+								life = true;				
 							}
 						}
 						else if(number_neighbors == 3)
 						{
-								happiness = true;				
+								life = true;				
 						};		
 
-						$scope.newLines[line].columns.push({ happy: happiness});				
+						$scope.newLines[line].columns.push({ living: life});
+						if(life)
+							$scope.numberOfLiving++;				
 					};
 
 				};
 				
-				$scope.updateHappiness();
+				$scope.updateLifes();
 			};
 
 			$scope.getNumberOfNeighbors = function(x, y){
@@ -105,7 +147,7 @@
 				var alive = false;
 				if ((x >= 0) && (x < $scope.numberOfLines) && (y >= 0) && (y < $scope.numberOfColumns)) 
 				{
-					alive = $scope.lines[parseInt(x)].columns[parseInt(y)].happy;
+					alive = $scope.lines[parseInt(x)].columns[parseInt(y)].living;
 				} 
 				else 
 				{
@@ -114,10 +156,13 @@
 				return alive;
 			};
 
-			$scope.updateHappiness = function () {
+			$scope.updateLifes = function () {
 				$scope.lines = $scope.newLines;
 				$scope.newLines = [];
 			};
+
+
+			$scope.populateArray();
 
 		}]);
 	</script>
@@ -131,12 +176,13 @@
 	<div class="container">
 		<label>Linhas</label> <input type="text" ng-model="numberOfLines"></input>
 		<label>Colunas</label> <input type="text" ng-model="numberOfColumns"></input>
+		<label>Tempo auto</label> <input type="text" ng-model="timeExec"></input>
 
 		<br>
 		<br>
 		<br>
 
-		<button ng-click="populateArray()" class="btn btn-large">Gerar tabela</button>
+		<button ng-click="resetAll()" class="btn btn-large">Gerar tabela/Resetar</button>
 		<label class="label">Geração: {{gen}}</label>
 
 		<br>
@@ -145,11 +191,11 @@
 
 		<table border="1">
 			<tr ng-repeat="line in  lines">
-				<td ng-repeat="column in line.columns" ng-class="{'selecionada': column.happy}">                    
-					<div ng-click="column.happy = false" ng-show="column.happy">
+				<td ng-repeat="column in line.columns" ng-class="{'selecionada': column.living}">                    
+					<div ng-click="changeLife(column, false);" ng-show="column.living">
 						<b>:-)</b>
 					</div>
-					<div ng-click="column.happy = true" ng-show="!column.happy">
+					<div ng-click="changeLife(column, true);" ng-show="!column.living">
 						<b>:-(</b>
 					</div>
 				</td>
@@ -162,6 +208,7 @@
 	
 
 		<button ng-click="step()" class="btn btn-large">Passo</button>
+		<button ng-click="stopAuto()" class="btn btn-large">Stop</button>
 		<button ng-click="stepAuto()" class="btn btn-large">Auto</button>
 	</div>
 </body>
