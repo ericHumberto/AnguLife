@@ -1,0 +1,168 @@
+﻿<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<title>AngularJS</title>
+	<link rel="stylesheet" href="css/bootstrap.css">
+	<link rel="stylesheet" href="css/app.css">
+	<link rel="stylesheet" href="css/curso.css">
+	<script src="lib/angular.min.js">
+	</script>
+	<script>
+		angular.module("myapp", []).controller('MyCtrl', ['$scope','$interval', function ($scope, $interval) {
+
+			$scope.numberOfLines = 10;
+			$scope.numberOfColumns = 10;
+			$scope.gen = 0;            
+
+			$scope.populateArray = function () {
+
+				if (isNaN(parseInt($scope.numberOfLines))) {
+					alert("Número de linhas de ser um inteiro");
+					return;
+				}
+				else if (isNaN(parseInt($scope.numberOfColumns))) {
+					alert("Número de colunas de ser um inteiro");
+					return;
+				}
+
+				$scope.lines = [];
+				$scope.newLines = [];
+
+				for (var i = 0; i < $scope.numberOfLines; i++) {
+
+					$scope.lines.push({ columns: [] });
+
+					for (var j = 0; j < $scope.numberOfColumns; j++) {
+						$scope.lines[i].columns.push({ happy: false});
+					}
+				};
+			};
+
+			$scope.step = function (){
+				$scope.gen++;
+				$scope.calculateNewState();
+			};
+
+			$scope.stepAuto = function (){
+				$interval(function(){
+					$scope.step();
+				}, 10);
+			};
+
+			$scope.calculateNewState = function(){
+				for (var line in $scope.lines){
+
+					$scope.newLines.push({ columns: [] });                    
+				 
+					for (var col in $scope.lines[line].columns) {
+
+						line = parseInt(line);
+						col = parseInt(col);
+
+						var happiness = $scope.lines[line].columns[col].happy;
+
+						var number_neighbors = $scope.getNumberOfNeighbors(line, col);
+
+						if(happiness)
+						{
+							if(number_neighbors < 2 || number_neighbors > 3)
+							{
+								happiness = false;					
+							}
+							else if(number_neighbors >= 2 || number_neighbors <= 3)
+							{
+								happiness = happiness;				
+							}
+						}
+						else if(number_neighbors == 3)
+						{
+								happiness = true;				
+						};		
+
+						$scope.newLines[line].columns.push({ happy: happiness});				
+					};
+
+				};
+				
+				$scope.updateHappiness();
+			};
+
+			$scope.getNumberOfNeighbors = function(x, y){
+				var n = 0;
+				if ($scope.isCellAlive(x-1, y-1))  n++;
+				if ($scope.isCellAlive(x-1, y))    n++;
+				if ($scope.isCellAlive(x-1, y+1))  n++;
+				if ($scope.isCellAlive(x, y-1))    n++;
+				if ($scope.isCellAlive(x, y+1))    n++;
+				if ($scope.isCellAlive(x+1, y-1))  n++;
+				if ($scope.isCellAlive(x+1, y))    n++;
+				if ($scope.isCellAlive(x+1, y+1))  n++;
+				return n;
+			};
+
+			$scope.isCellAlive = function(x, y){
+				var alive = false;
+				if ((x >= 0) && (x < $scope.numberOfLines) && (y >= 0) && (y < $scope.numberOfColumns)) 
+				{
+					alive = $scope.lines[parseInt(x)].columns[parseInt(y)].happy;
+				} 
+				else 
+				{
+					alive = false;
+				}
+				return alive;
+			};
+
+			$scope.updateHappiness = function () {
+				$scope.lines = $scope.newLines;
+				$scope.newLines = [];
+			};
+
+		}]);
+	</script>
+	<style type="text/css">
+		.selecionada{
+			background: gray;
+		}
+	</style>
+</head>
+<body ng-app="myapp" ng-controller="MyCtrl">
+	<div class="container">
+		<label>Linhas</label> <input type="text" ng-model="numberOfLines"></input>
+		<label>Colunas</label> <input type="text" ng-model="numberOfColumns"></input>
+
+		<br>
+		<br>
+		<br>
+
+		<button ng-click="populateArray()" class="btn btn-large">Gerar tabela</button>
+		<label class="label">Geração: {{gen}}</label>
+
+		<br>
+		<br>
+		<br>
+
+		<table border="1">
+			<tr ng-repeat="line in  lines">
+				<td ng-repeat="column in line.columns" ng-class="{'selecionada': column.happy}">                    
+					<div ng-click="column.happy = false" ng-show="column.happy">
+						<b>:-)</b>
+					</div>
+					<div ng-click="column.happy = true" ng-show="!column.happy">
+						<b>:-(</b>
+					</div>
+				</td>
+			</tr>
+		</table>
+
+		<br>
+		<br>
+		<br>
+	
+
+		<button ng-click="step()" class="btn btn-large">Passo</button>
+		<button ng-click="stepAuto()" class="btn btn-large">Auto</button>
+	</div>
+</body>
+</html>
