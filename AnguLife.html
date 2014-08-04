@@ -55,7 +55,9 @@
 					$scope.calculateNewState();
 				}
 				else{
-					$scope.stopAuto();
+					$scope.stopAuto();					
+					alert('Fim');
+					$scope.resetAll();
 				}	
 			};
 
@@ -91,6 +93,8 @@
 			};
 
 			$scope.calculateNewState = function(){
+				$scope.numberOfLiving = 0;
+
 				for (var line in $scope.lines){
 
 					$scope.newLines.push({ columns: [] });                    
@@ -121,8 +125,9 @@
 						};		
 
 						$scope.newLines[line].columns.push({ living: life});
+
 						if(life)
-							$scope.numberOfLiving++;				
+							$scope.numberOfLiving++;	
 					};
 
 				};
@@ -161,13 +166,12 @@
 				$scope.newLines = [];
 			};
 
-
 			$scope.populateArray();
 
 		}]);
 	</script>
 	<style type="text/css">
-		.selecionada{
+		.classLiving{
 			background: gray;
 		}
 	</style>
@@ -191,7 +195,7 @@
 
 		<table border="1">
 			<tr ng-repeat="line in  lines">
-				<td ng-repeat="column in line.columns" ng-class="{'selecionada': column.living}">                    
+				<td ng-repeat="column in line.columns" ng-class="{'classLiving': column.living}">                    
 					<div ng-click="changeLife(column, false);" ng-show="column.living">
 						<b>:-)</b>
 					</div>
@@ -207,9 +211,9 @@
 		<br>
 	
 
-		<button ng-click="step()" class="btn btn-large">Passo</button>
-		<button ng-click="stopAuto()" class="btn btn-large">Stop</button>
-		<button ng-click="stepAuto()" class="btn btn-large">Auto</button>
+		<button ng-click="step()" ng-show="promisseAutoExec == null" class="btn btn-large">Passo</button>
+		<button ng-click="stopAuto()" ng-show="promisseAutoExec != null" class="btn btn-large">Stop</button>
+		<button ng-click="stepAuto()" ng-show="promisseAutoExec == null" class="btn btn-large">Auto</button>
 	</div>
 </body>
 </html>
